@@ -14,7 +14,7 @@ export class AuthService {
         }
 
         const user = await this.userService.createUser(username, password);
-        const payload = {username: user.username, sub: user.id};
+        const payload = { username: user.username, sub: user.id };
 
         return {
             access_token: this.jwtService.sign(payload),
@@ -26,5 +26,33 @@ export class AuthService {
         };
     }
 
-    
-}
+    async login(username: string, password: string): Promise<any> {
+        const user = await this.userService.findOne(username);
+        if (!user) {
+            throw new UnauthorizedException("Invalid credentials");
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            throw new UnauthorizedException("Invalid credentials");
+        }
+
+        const payload = { username: user.username, sub: user.id };
+        return {
+            access_token: this.jwtService.sign(payload),
+            user: {
+                id: user.id,
+                username: user.username
+            },
+        };
+    }
+
+    async validateUser(userId: number): Promise<any> {
+        const user = await this.userService.findById(userId);
+        if (!user) {
+            return null;
+        }
+        const {password, ...result} = user;
+        return result;
+    }
+ }
