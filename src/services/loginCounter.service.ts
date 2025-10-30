@@ -1,4 +1,4 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
+import { BadRequestException, Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { Consumer, Kafka } from "kafkajs";
 
 @Injectable()
@@ -34,6 +34,10 @@ export class LoginCounterService implements OnModuleInit, OnModuleDestroy {
                     }
                     
                     const count = (this.loginCounts.get(username) || 0) + 1;
+                    if (count > 2) {
+                        console.log("Maximum login limit reached!!")
+                        throw new BadRequestException("Maximum login limit reached!!");
+                    }
                     this.loginCounts.set(username, count);
                     console.log(`${username} has logged in ${count} times`);
                 } catch (error) {
