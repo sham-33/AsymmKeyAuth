@@ -7,7 +7,7 @@ import { AuthService } from "../services/auth.service";
 import { JwtStrategy } from "../passport/jwt.strategy";
 import { Controller, Module } from "@nestjs/common";
 import { AuthController } from "../controllers/auth.controller";
-import { KafkaModule } from "../kafka/kafka.module";
+import { KafkaModule } from "./kafka.module";
 import { LoginCounterService } from "../services/loginCounter.service";
 
 @Module({
