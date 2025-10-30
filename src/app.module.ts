@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './modules/auth.module';
 import { UserModule } from './modules/user.module';
 import { User } from './entities/user.entity';
+import { KafkaModule } from './kafka/kafka.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { User } from './entities/user.entity';
     }),
     AuthModule,
     UserModule,
+    KafkaModule
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -7,11 +7,14 @@ import { AuthService } from "../services/auth.service";
 import { JwtStrategy } from "../passport/jwt.strategy";
 import { Controller, Module } from "@nestjs/common";
 import { AuthController } from "../controllers/auth.controller";
+import { KafkaModule } from "../kafka/kafka.module";
+import { LoginCounterService } from "../services/loginCounter.service";
 
 @Module({
     imports: [
         UserModule,
         PassportModule,
+        KafkaModule,
         JwtModule.register({
             privateKey: fs.readFileSync(path.join(__dirname, '../../keys/private.pem')),
             publicKey: fs.readFileSync(path.join(__dirname, '../../keys/public.pem')),
@@ -21,7 +24,7 @@ import { AuthController } from "../controllers/auth.controller";
             },
         }),
     ],
-    providers: [AuthService, JwtStrategy],
+    providers: [AuthService, JwtStrategy, LoginCounterService],
     controllers: [AuthController],
     exports: [AuthService],
 })
