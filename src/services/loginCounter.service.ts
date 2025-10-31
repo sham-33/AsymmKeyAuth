@@ -1,13 +1,18 @@
-import { BadRequestException, Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
+import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 import { Consumer, Kafka } from "kafkajs";
+import { User } from "../entities/user.entity";
 
 @Injectable()
 export class LoginCounterService implements OnModuleInit, OnModuleDestroy {
     private kafka: Kafka;
     private consumer: Consumer;
-    private loginCounts: Map<string, number> = new Map();
 
-    constructor() {
+    constructor(
+        @InjectRepository(User)
+        private userRepository: Repository<User>,
+    ) {
         this.kafka = new Kafka({
             clientId: 'auth-service',
             brokers: ['localhost:9092']
@@ -33,22 +38,34 @@ export class LoginCounterService implements OnModuleInit, OnModuleDestroy {
                         return;
                     }
                     
-                    const count = (this.loginCounts.get(username) || 0) + 1;
-                    if (count > 2) {
-                        console.log("Maximum login limit reached!!")
-                        throw new BadRequestException("Maximum login limit reached!!");
-                    }
-                    this.loginCounts.set(username, count);
+                    // Increment login count in database
+                    await this.incrementLoginCount(username);
+                    
+                    // Get current count from database
+                    const count = await this.getLoginCount(username);
                     console.log(`${username} has logged in ${count} times`);
                 } catch (error) {
                     console.error('Error processing Kafka message:', error);
                 }
             },
         });
-
     }
-    getLoginCount(username: string): number {
-        return this.loginCounts.get(username) || 0;
+
+    async incrementLoginCount(username: string): Promise<void> {
+        await this.userRepository.increment({ username }, 'loginCount', 1);
+    }
+
+    async getLoginCount(username: string): Promise<number> {
+        const user = await this.userRepository.findOne({ where: { username } });
+        return user?.loginCount ?? 0;
+    }
+
+    async resetLoginCount(username: string): Promise<void> {
+        await this.userRepository.update({ username }, { loginCount: 0 });
+    }
+
+    isBlocked(loginCount: number): boolean {
+        return loginCount >= 3;
     }
 
     async onModuleDestroy() {

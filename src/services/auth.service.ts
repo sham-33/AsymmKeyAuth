@@ -3,6 +3,7 @@ import { JwtService } from "@nestjs/jwt";
 import { UserService } from "../services/user.service";
 import * as bcrypt from "bcrypt";
 import { KafkaProducerService } from "./kafkaProducer.service";
+import { LoginCounterService } from "./loginCounter.service";
 
 @Injectable()
 export class AuthService {
@@ -10,7 +11,8 @@ export class AuthService {
         private userService: UserService,
         private jwtService: JwtService,
         private kafkaProducer: KafkaProducerService,
-    ) {}
+        private loginCounter: LoginCounterService,
+    ) { }
 
     async register(username: string, password: string): Promise<any> {
         const existingUser = await this.userService.findOne(username);
@@ -35,9 +37,16 @@ export class AuthService {
             const user = await this.userService.findOne(username);
             if (!user) throw new UnauthorizedException("Invalid credentials");
 
+            const currentLoginCount = await this.loginCounter.getLoginCount(username);
+            if (this.loginCounter.isBlocked(currentLoginCount)) {
+                throw new UnauthorizedException("Login limit reached. Maximum 3 logins allowed.");
+            }
+
             const isPasswordValid = await bcrypt.compare(password, user.password);
-            if (!isPasswordValid)
+            if (!isPasswordValid) {
                 throw new UnauthorizedException("Invalid credentials");
+            }
+
 
             await this.kafkaProducer.sendLoginEvent(username);
 
@@ -48,10 +57,14 @@ export class AuthService {
                 user: {
                     id: user.id,
                     username: user.username,
+                    loginCount: currentLoginCount + 1,
                 },
             };
         } catch (error) {
             console.error("Login error:", error);
+            if (error instanceof UnauthorizedException) {
+                throw error;
+            }
             throw new UnauthorizedException("Login failed");
         }
     }
