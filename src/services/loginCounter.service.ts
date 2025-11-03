@@ -9,10 +9,7 @@ export class LoginCounterService implements OnModuleInit, OnModuleDestroy {
     private kafka: Kafka;
     private consumer: Consumer;
 
-    constructor(
-        @InjectRepository(User)
-        private userRepository: Repository<User>,
-    ) {
+    constructor(@InjectRepository(User) private userRepository: Repository<User>) {
         this.kafka = new Kafka({
             clientId: 'auth-service',
             brokers: ['localhost:9092']
@@ -37,10 +34,10 @@ export class LoginCounterService implements OnModuleInit, OnModuleDestroy {
                         console.warn('Received message without username, skipping...');
                         return;
                     }
-                    
+
                     // Increment login count in database
                     await this.incrementLoginCount(username);
-                    
+
                     // Get current count from database
                     const count = await this.getLoginCount(username);
                     console.log(`${username} has logged in ${count} times`);

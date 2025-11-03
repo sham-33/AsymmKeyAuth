@@ -47,7 +47,6 @@ export class AuthService {
                 throw new UnauthorizedException("Invalid credentials");
             }
 
-
             await this.kafkaProducer.sendLoginEvent(username);
 
             const payload = { username: user.username, sub: user.id };
