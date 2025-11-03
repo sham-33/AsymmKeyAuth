@@ -35,10 +35,8 @@ export class LoginCounterService implements OnModuleInit, OnModuleDestroy {
                         return;
                     }
 
-                    // Increment login count in database
                     await this.incrementLoginCount(username);
 
-                    // Get current count from database
                     const count = await this.getLoginCount(username);
                     console.log(`${username} has logged in ${count} times`);
                 } catch (error) {
